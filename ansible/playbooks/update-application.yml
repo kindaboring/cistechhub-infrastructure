@@ -1,0 +1,50 @@
+---
+- name: Update Cistechhub Application (Rolling Update)
+  hosts: tag_Project_cistechhub
+  become: true
+  serial: 1  # Update one server at a time
+  vars:
+    app_dir: /opt/cistechhub
+
+  tasks:
+    - name: Pull latest Docker images
+      shell: |
+        cd {{ app_dir }}
+        docker-compose pull
+      args:
+        executable: /bin/bash
+      register: pull_result
+
+    - name: Display pull results
+      debug:
+        var: pull_result.stdout_lines
+
+    - name: Recreate and restart services
+      shell: |
+        cd {{ app_dir }}
+        docker-compose up -d --force-recreate
+      args:
+        executable: /bin/bash
+
+    - name: Wait for services to stabilize
+      pause:
+        seconds: 30
+
+    - name: Check service health
+      shell: |
+        cd {{ app_dir }}
+        docker-compose ps
+      args:
+        executable: /bin/bash
+      register: health_check
+
+    - name: Display service status
+      debug:
+        var: health_check.stdout_lines
+
+    - name: Verify application is responding
+      uri:
+        url: "http://localhost/health"
+        status_code: 200
+      retries: 5
+      delay: 10

@@ -1,0 +1,21 @@
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "dev"
+
+# EC2 Configuration
+instance_type = "t2.micro"  # FREE TIER
+
+# SSH Key Pair (create in AWS Console first)
+# Leave empty to use AWS Systems Manager Session Manager instead
+key_name = ""
+
+# SSH Access - IMPORTANT: Replace with your IP address!
+# Find your IP: curl ifconfig.me
+ssh_allowed_cidrs = [
+  "0.0.0.0/0"  # WARNING: Allows SSH from anywhere! Change to your IP: "YOUR.IP.ADDRESS/32"
+]
+
+# Google OAuth (optional)
+# Create credentials at: https://console.developers.google.com/
+# google_client_id     = "your-client-id.apps.googleusercontent.com"
+# google_client_secret = "your-client-secret"
