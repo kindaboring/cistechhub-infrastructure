@@ -1,0 +1,97 @@
+name: Deploy on Image Push
+
+# Triggered by the container repository after a successful image build and push.
+# The container repo sends a repository_dispatch event via the GitHub API.
+on:
+  repository_dispatch:
+    types:
+      - container-image-updated
+
+  # Allow manual re-deploys without a new image push
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (e.g. sha-abc1234, latest)'
+        required: false
+        default: 'latest'
+      reason:
+        description: 'Reason for manual deploy'
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  deploy:
+    name: Rolling Deploy via Ansible
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Capture deploy metadata
+        id: meta
+        run: |
+          # For repository_dispatch, payload comes from the container repo
+          # For workflow_dispatch, use manual inputs
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "image_tag=${{ github.event.client_payload.image_tag }}" >> $GITHUB_OUTPUT
+            echo "image_repo=${{ github.event.client_payload.image_repo }}" >> $GITHUB_OUTPUT
+            echo "triggered_by=container-repo" >> $GITHUB_OUTPUT
+            echo "commit_sha=${{ github.event.client_payload.commit_sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+            echo "image_repo=manual" >> $GITHUB_OUTPUT
+            echo "triggered_by=manual (${{ github.actor }})" >> $GITHUB_OUTPUT
+            echo "commit_sha=N/A" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log deploy context
+        run: |
+          echo "Deploying image tag : ${{ steps.meta.outputs.image_tag }}"
+          echo "Image repository    : ${{ steps.meta.outputs.image_repo }}"
+          echo "Triggered by        : ${{ steps.meta.outputs.triggered_by }}"
+          echo "Source commit       : ${{ steps.meta.outputs.commit_sha }}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible + AWS dependencies
+        run: |
+          pip install ansible boto3 botocore
+
+      - name: Install AWS and SSM Ansible collections
+        run: |
+          ansible-galaxy collection install amazon.aws community.aws
+
+      - name: Install SSM Session Manager plugin
+        run: |
+          curl -sSL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" \
+            -o /tmp/session-manager-plugin.deb
+          sudo dpkg -i /tmp/session-manager-plugin.deb
+
+      - name: Run rolling deploy playbook (via SSM — no SSH key required)
+        working-directory: ansible
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+          # SSM connection uses the AWS credentials configured above.
+          # No EC2 key pair or open port 22 required.
+          ANSIBLE_CONNECTION: community.aws.aws_ssm
+        run: |
+          ansible-playbook playbooks/update-application.yml \
+            -i inventory/aws_ec2.yml \
+            --extra-vars "image_tag=${IMAGE_TAG} ansible_connection=community.aws.aws_ssm ansible_aws_ssm_region=${{ env.AWS_REGION }}"

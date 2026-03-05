@@ -1,0 +1,102 @@
+name: Ansible Lint
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-lint.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-lint.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ansible-lint:
+    name: Lint Playbooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible and ansible-lint
+        run: |
+          pip install --upgrade pip
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        id: lint
+        working-directory: ansible
+        run: |
+          ansible-lint playbooks/ --profile=production --nocolor 2>&1 | tee lint_output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Post Lint Results to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const lintOutput = fs.existsSync('ansible/lint_output.txt')
+              ? fs.readFileSync('ansible/lint_output.txt', 'utf8')
+              : 'No output captured.';
+            const outcome = '${{ steps.lint.outcome }}';
+            const icon = outcome === 'success' ? '✅' : '⚠️';
+            const body = `### ${icon} Ansible Lint: \`${outcome}\`
+            <details><summary>Show Lint Output</summary>
+
+            \`\`\`
+            ${lintOutput.substring(0, 30000)}
+            \`\`\`
+            </details>
+            `;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Fail if Lint Found Errors
+        if: steps.lint.outputs.exit_code != '0'
+        run: |
+          echo "ansible-lint reported issues. Review the output above."
+          exit 1
+
+  ansible-syntax-check:
+    name: Syntax Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Syntax Check All Playbooks
+        working-directory: ansible
+        run: |
+          for playbook in playbooks/*.yml; do
+            echo "Checking syntax: $playbook"
+            ansible-playbook --syntax-check "$playbook" -i /dev/null || true
+          done

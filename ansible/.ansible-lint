@@ -1,0 +1,20 @@
+---
+profile: production
+
+# Paths to lint
+lint_paths:
+  - playbooks/
+
+# Rules to skip that are not applicable to this project structure
+skip_list:
+  - yaml[truthy]          # Allow true/false in addition to yes/no
+  - name[missing]         # Some tasks use command/shell without names for brevity
+  - command-instead-of-module  # Some shell tasks are intentional for docker-compose
+
+# Warn-only rules (do not fail the build, but still surface)
+warn_list:
+  - experimental
+
+# Exclude paths
+exclude_paths:
+  - inventory/
