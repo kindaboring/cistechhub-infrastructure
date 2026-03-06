@@ -1,6 +1,6 @@
-# AWS Cloud Sandbox
+# CIS Tech Hub Infrastructure
 
-Production-grade AWS infrastructure for the [Cistechhub](https://github.com/kindaboring/cistechhub) web application, built to demonstrate end-to-end DevOps and cloud engineering practices. The infrastructure is fully automated — from provisioning to deployment — using Terraform, Ansible, and GitHub Actions.
+Production-grade AWS infrastructure for the [CIS Tech Hub](https://github.com/kindaboring/cistechhub) web application, built to demonstrate end-to-end DevOps and cloud engineering practices. The infrastructure is fully automated — from provisioning to deployment — using Terraform, Ansible, and GitHub Actions.
 
 ## Architecture
 
@@ -139,6 +139,7 @@ Runs tfsec and Checkov on every PR and on a weekly schedule. Findings are upload
 
 | Secret | Description |
 |---|---|
+| `TF_API_TOKEN` | HCP Terraform API token (for remote state backend) |
 | `AWS_ACCESS_KEY_ID` | IAM user access key |
 | `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID (optional) |

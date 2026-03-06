@@ -1,6 +1,13 @@
 terraform {
   required_version = ">= 1.0"
 
+  cloud {
+    organization = "CIS-TechHub"
+    workspaces {
+      name = "AWS-Infra"
+    }
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -11,6 +18,7 @@ terraform {
       version = "~> 3.0"
     }
   }
+
 }
 
 provider "aws" {
