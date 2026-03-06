@@ -1,10 +1,6 @@
 ---
 profile: production
 
-# Paths to lint
-lint_paths:
-  - playbooks/
-
 # Rules to skip that are not applicable to this project structure
 skip_list:
   - yaml[truthy]          # Allow true/false in addition to yes/no
