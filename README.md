@@ -1,8 +1,8 @@
 # CIS Tech Hub Infrastructure
 
-![Terraform CI/CD](https://github.com/kindaboring/cistechhub-infrastructure/actions/workflows/terraform.yml/badge.svg)
-![Security Scan](https://github.com/kindaboring/cistechhub-infrastructure/actions/workflows/security-scan.yml/badge.svg)
-![Ansible Lint](https://github.com/kindaboring/cistechhub-infrastructure/actions/workflows/ansible-lint.yml/badge.svg)
+![Terraform CI/CD](https://github.com/kindaboring/cistechhub-infrastructure/actions/workflows/terraform.yml/badge.svg?branch=main)
+![Security Scan](https://github.com/kindaboring/cistechhub-infrastructure/actions/workflows/security-scan.yml/badge.svg?branch=main)
+![Ansible Lint](https://github.com/kindaboring/cistechhub-infrastructure/actions/workflows/ansible-lint.yml/badge.svg?branch=main)
 
 Production-grade AWS infrastructure for the [CIS Tech Hub](https://github.com/kindaboring/cistechhub) web application, built to demonstrate end-to-end DevOps and cloud engineering practices. The infrastructure is fully automated — from provisioning to deployment — using Terraform, Ansible, and GitHub Actions.
 
@@ -10,20 +10,20 @@ Production-grade AWS infrastructure for the [CIS Tech Hub](https://github.com/ki
 
 ```mermaid
 flowchart TD
-    AppRepo["kindaboring/cistechhub\n(application repo)"]
-    InfraRepo["kindaboring/cistechhub-infrastructure\n(this repo)"]
+    AppRepo["kindaboring/cistechhub<br/>(application repo)"]
+    InfraRepo["kindaboring/cistechhub-infrastructure<br/>(this repo)"]
 
     AppRepo -->|"Build & push Docker image"| ECR[("ECR")]
-    AppRepo -->|"repository_dispatch\ncontainer-image-updated"| InfraRepo
+    AppRepo -->|"repository_dispatch<br/>container-image-updated"| InfraRepo
 
     subgraph GHA["GitHub Actions"]
         direction TB
-        Validate["Validate\ntf fmt + tf validate"]
-        Plan["Plan\npost diff to PR"]
-        TFGate{{"Manual Approval\nproduction env"}}
+        Validate["Validate<br/>tf fmt + tf validate"]
+        Plan["Plan<br/>post diff to PR"]
+        TFGate{{"Manual Approval<br/>production env"}}
         TFApply["terraform apply"]
-        AnsibleGate{{"Manual Approval\nproduction env"}}
-        Ansible["Ansible rolling deploy\ndocker-compose pull + recreate"]
+        AnsibleGate{{"Manual Approval<br/>production env"}}
+        Ansible["Ansible rolling deploy<br/>docker-compose pull + recreate"]
 
         Validate --> Plan --> TFGate --> TFApply
         InfraRepo --> Validate
@@ -32,14 +32,14 @@ flowchart TD
 
     subgraph AWS["AWS (us-east-1)"]
         EIP["Elastic IP"]
-        S3["S3 Bucket\nfile uploads"]
-        IAM["IAM Role\nSSM · CloudWatch · S3"]
+        S3["S3 Bucket<br/>file uploads"]
+        IAM["IAM Role<br/>SSM · CloudWatch · S3"]
 
         subgraph VPC["VPC"]
             subgraph PublicSubnet["Public Subnet"]
-                EC2["EC2 t3.micro\nnginx · Node.js API · Next.js · MongoDB"]
+                EC2["EC2 t3.micro<br/>nginx · Node.js API · Next.js · MongoDB"]
             end
-            PrivateSubnet["Private Subnet\n(reserved for scaling)"]
+            PrivateSubnet["Private Subnet<br/>(reserved for scaling)"]
         end
     end
 
