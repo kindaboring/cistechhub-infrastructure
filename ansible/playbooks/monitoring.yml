@@ -4,69 +4,76 @@
   become: true
   vars:
     app_dir: /opt/cistechhub
+    docker_stats_format: !unsafe "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 
   tasks:
     - name: Check Docker service status
-      systemd:
+      ansible.builtin.systemd:
         name: docker
         state: started
       register: docker_service
 
     - name: Get Docker Compose service status
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose ps
       args:
         executable: /bin/bash
       register: compose_status
+      changed_when: false
 
     - name: Display service status
-      debug:
+      ansible.builtin.debug:
         var: compose_status.stdout_lines
 
     - name: Check disk usage
-      shell: df -h /
+      ansible.builtin.command: df -h /
       register: disk_usage
+      changed_when: false
 
     - name: Display disk usage
-      debug:
+      ansible.builtin.debug:
         var: disk_usage.stdout_lines
 
     - name: Check memory usage
-      shell: free -h
+      ansible.builtin.command: free -h
       register: memory_usage
+      changed_when: false
 
     - name: Display memory usage
-      debug:
+      ansible.builtin.debug:
         var: memory_usage.stdout_lines
 
     - name: Get Docker stats
-      shell: docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+      ansible.builtin.command: docker stats --no-stream --format {{ docker_stats_format }}
       register: docker_stats
+      changed_when: false
 
     - name: Display Docker container stats
-      debug:
+      ansible.builtin.debug:
         var: docker_stats.stdout_lines
 
     - name: Check for Docker errors
-      shell: |
+      ansible.builtin.shell: |
+        set -o pipefail
         cd {{ app_dir }}
         docker-compose logs --tail=20 | grep -i error || echo "No errors found"
       args:
         executable: /bin/bash
       register: error_logs
+      changed_when: false
 
     - name: Display recent errors
-      debug:
+      ansible.builtin.debug:
         var: error_logs.stdout_lines
 
     - name: Test application endpoint
-      uri:
+      ansible.builtin.uri:
         url: "http://{{ ansible_host }}"
         status_code: 200
       register: app_health
       ignore_errors: true
 
     - name: Display application health
-      debug:
+      ansible.builtin.debug:
         msg: "Application is {{ 'HEALTHY' if app_health.status == 200 else 'UNHEALTHY' }}"

@@ -8,42 +8,45 @@
 
   tasks:
     - name: Pull latest Docker images
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose pull
       args:
         executable: /bin/bash
       register: pull_result
+      changed_when: true
 
     - name: Display pull results
-      debug:
+      ansible.builtin.debug:
         var: pull_result.stdout_lines
 
     - name: Recreate and restart services
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose up -d --force-recreate
       args:
         executable: /bin/bash
+      changed_when: true
 
     - name: Wait for services to stabilize
-      pause:
+      ansible.builtin.pause:
         seconds: 30
 
     - name: Check service health
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose ps
       args:
         executable: /bin/bash
       register: health_check
+      changed_when: false
 
     - name: Display service status
-      debug:
+      ansible.builtin.debug:
         var: health_check.stdout_lines
 
     - name: Verify application is responding
-      uri:
+      ansible.builtin.uri:
         url: "http://localhost/health"
         status_code: 200
       retries: 5

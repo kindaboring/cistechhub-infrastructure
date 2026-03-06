@@ -8,19 +8,19 @@
 
   tasks:
     - name: Check if Docker is installed
-      command: docker --version
+      ansible.builtin.command: docker --version
       register: docker_check
       failed_when: false
       changed_when: false
 
     - name: Check if Docker Compose is installed
-      command: docker-compose --version
+      ansible.builtin.command: docker-compose --version
       register: docker_compose_check
       failed_when: false
       changed_when: false
 
     - name: Ensure application directory exists
-      file:
+      ansible.builtin.file:
         path: "{{ app_dir }}"
         state: directory
         owner: ec2-user
@@ -28,54 +28,59 @@
         mode: '0755'
 
     - name: Check if application is already set up
-      stat:
+      ansible.builtin.stat:
         path: "{{ app_dir }}/docker-compose.yml"
       register: docker_compose_file
 
     - name: Wait for initial setup to complete
-      wait_for:
+      ansible.builtin.wait_for:
         path: "{{ app_dir }}/docker-compose.yml"
         timeout: 600
       when: not docker_compose_file.stat.exists
 
     - name: Pull latest Docker images
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose pull
       args:
         executable: /bin/bash
+      register: pull_result
+      changed_when: true
 
     - name: Restart Docker Compose services
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose down
         docker-compose up -d
       args:
         executable: /bin/bash
+      changed_when: true
 
     - name: Wait for services to be healthy
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose ps
       args:
         executable: /bin/bash
       register: compose_status
+      changed_when: false
       until: compose_status.rc == 0
       retries: 10
       delay: 10
 
     - name: Display service status
-      debug:
+      ansible.builtin.debug:
         var: compose_status.stdout_lines
 
     - name: Get application logs
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker-compose logs --tail=50
       args:
         executable: /bin/bash
       register: app_logs
+      changed_when: false
 
     - name: Display recent logs
-      debug:
+      ansible.builtin.debug:
         var: app_logs.stdout_lines

@@ -9,7 +9,7 @@
 
   tasks:
     - name: Create backup directory
-      file:
+      ansible.builtin.file:
         path: "{{ backup_dir }}"
         state: directory
         owner: ec2-user
@@ -17,17 +17,18 @@
         mode: '0755'
 
     - name: Get MongoDB credentials from environment file
-      shell: |
+      ansible.builtin.shell: |
         source {{ app_dir }}/.env
         echo "MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}"
         echo "MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}"
       args:
         executable: /bin/bash
       register: mongo_creds
+      changed_when: false
       no_log: true
 
     - name: Perform MongoDB dump
-      shell: |
+      ansible.builtin.shell: |
         source {{ app_dir }}/.env
         cd {{ app_dir }}
         docker-compose exec -T mongodb mongodump \
@@ -39,26 +40,29 @@
           --gzip
       args:
         executable: /bin/bash
+      changed_when: true
 
     - name: Copy backup from container to host
-      shell: |
+      ansible.builtin.shell: |
         cd {{ app_dir }}
         docker cp cistechhub-mongodb:/data/db/backup-{{ backup_date }}.archive {{ backup_dir }}/
       args:
         executable: /bin/bash
+      changed_when: true
 
     - name: List backups
-      find:
+      ansible.builtin.find:
         paths: "{{ backup_dir }}"
         patterns: "backup-*.archive"
       register: backup_files
 
     - name: Display backup files
-      debug:
+      ansible.builtin.debug:
         msg: "Backup created at {{ backup_dir }}/backup-{{ backup_date }}.archive"
 
     - name: Remove backups older than 7 days
-      shell: |
+      ansible.builtin.shell: |
         find {{ backup_dir }} -name "backup-*.archive" -mtime +7 -delete
       args:
         executable: /bin/bash
+      changed_when: true
