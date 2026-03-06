@@ -21,7 +21,7 @@ variable "public_subnet_id" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t2.micro"
+  default     = "t3.micro"
 }
 
 variable "key_name" {
@@ -31,9 +31,9 @@ variable "key_name" {
 }
 
 variable "ssh_allowed_cidrs" {
-  description = "CIDR blocks allowed to SSH (use your IP for security)"
+  description = "CIDR blocks allowed SSH ingress. Defaults to empty (no SSH rule created) since SSM is the primary access method."
   type        = list(string)
-  default     = ["0.0.0.0/0"]  # Change this to your IP!
+  default     = []
 }
 
 variable "uploads_bucket_name" {

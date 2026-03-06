@@ -31,10 +31,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
+        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
         with:
           working_directory: '.'
           format: sarif
@@ -42,14 +42,14 @@ jobs:
         continue-on-error: true
 
       - name: Upload tfsec SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
         if: always()
         with:
           sarif_file: tfsec-results.sarif
 
       - name: Run tfsec (human-readable summary)
         id: tfsec_summary
-        uses: aquasecurity/tfsec-action@v1.0.3
+        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
         with:
           working_directory: '.'
           format: lovely
@@ -58,7 +58,7 @@ jobs:
 
       - name: Post tfsec Summary to PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const outcome = '${{ steps.tfsec_summary.outcome }}';
@@ -80,11 +80,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Run Checkov
         id: checkov
-        uses: bridgecrewio/checkov-action@v12
+        uses: bridgecrewio/checkov-action@4b38516b47b2df46475d84383f9aa2c8ef912aae # v12
         with:
           directory: .
           framework: terraform
@@ -93,7 +93,7 @@ jobs:
           soft_fail: true
 
       - name: Upload Checkov SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
         if: always()
         with:
           sarif_file: checkov-results.sarif

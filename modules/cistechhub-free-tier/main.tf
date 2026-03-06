@@ -22,13 +22,17 @@ resource "aws_security_group" "app_server" {
     description = "Allow HTTPS"
   }
 
-  # SSH access (restrict to your IP in production!)
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = var.ssh_allowed_cidrs
-    description = "Allow SSH for management"
+  # SSH ingress — only created when ssh_allowed_cidrs is explicitly set.
+  # SSM Session Manager is the default access method; no SSH rule is needed.
+  dynamic "ingress" {
+    for_each = length(var.ssh_allowed_cidrs) > 0 ? [1] : []
+    content {
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = var.ssh_allowed_cidrs
+      description = "Allow SSH for management"
+    }
   }
 
   egress {
