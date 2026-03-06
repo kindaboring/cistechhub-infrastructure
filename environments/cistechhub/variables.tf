@@ -37,9 +37,9 @@ variable "private_subnet_cidrs" {
 
 # Compute Variables
 variable "instance_type" {
-  description = "EC2 instance type (use t2.micro for free tier)"
+  description = "EC2 instance type (use t3.micro for free tier)"
   type        = string
-  default     = "t2.micro"
+  default     = "t3.micro"
 }
 
 variable "key_name" {
