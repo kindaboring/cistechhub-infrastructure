@@ -8,47 +8,7 @@ Production-grade AWS infrastructure for the [CIS Tech Hub](https://github.com/ki
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    AppRepo["kindaboring/cistechhub<br/>(application repo)"]
-    InfraRepo["kindaboring/cistechhub-infrastructure<br/>(this repo)"]
-
-    AppRepo -->|"Build & push Docker image"| ECR[("ECR")]
-    AppRepo -->|"repository_dispatch<br/>container-image-updated"| InfraRepo
-
-    subgraph GHA["GitHub Actions"]
-        direction TB
-        Validate["Validate<br/>tf fmt + tf validate"]
-        Plan["Plan<br/>post diff to PR"]
-        TFGate{{"Manual Approval<br/>production env"}}
-        TFApply["terraform apply"]
-        AnsibleGate{{"Manual Approval<br/>production env"}}
-        Ansible["Ansible rolling deploy<br/>docker-compose pull + recreate"]
-
-        Validate --> Plan --> TFGate --> TFApply
-        InfraRepo --> Validate
-        InfraRepo --> AnsibleGate --> Ansible
-    end
-
-    subgraph AWS["AWS (us-east-1)"]
-        EIP["Elastic IP"]
-        S3["S3 Bucket<br/>file uploads"]
-        IAM["IAM Role<br/>SSM · CloudWatch · S3"]
-
-        subgraph VPC["VPC"]
-            subgraph PublicSubnet["Public Subnet"]
-                EC2["EC2 t3.micro<br/>nginx · Node.js API · Next.js · MongoDB"]
-            end
-            PrivateSubnet["Private Subnet<br/>(reserved for scaling)"]
-        end
-    end
-
-    TFApply -->|"provisions"| AWS
-    Ansible -->|"SSM — no port 22 required"| EC2
-    EIP --> EC2
-    IAM -.->|"instance profile"| EC2
-    EC2 -->|"IAM role"| S3
-```
+![Diagram](https://github.com/kindaboring/cistechhub-infrastructure/blob/main/diagram.jpg)
 
 ## Tech Stack
 
